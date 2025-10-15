@@ -4,6 +4,7 @@ import whisper
 import ffmpeg
 import requests
 import os
+import openai
 
 # Variables de entorno (puedes usar os.environ o un archivo config.py si lo prefieres)
 TOKEN = os.getenv("8446586608:AAHqUrq0CzEU_HfvlnlW7WPY8sNLdhHJZao")
@@ -19,8 +20,10 @@ def convertir_ogg_a_wav(ogg_path, wav_path):
 
 # Función para transcribir audio con Whisper
 def transcribe_audio(file_path):
-    result = model.transcribe(file_path, language="es")
-    return result["text"]
+    audio_file = open(file_path, "rb")
+    transcript = openai.Audio.transcribe("whisper-1", audio_file)
+    return transcript["text"]
+
 
 # Función para generar voz femenina con ElevenLabs
 def generar_voz(texto):
