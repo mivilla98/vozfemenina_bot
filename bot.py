@@ -6,9 +6,9 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 
 # 🔐 Claves desde variables de entorno
-TOKEN = os.getenv("8446586608:AAHqUrq0CzEU_HfvlnlW7WPY8sNLdhHJZao")
-ELEVEN_API_KEY = os.getenv("1a53b0ca08a04fd6af805d759188191e")
-VOICE_ID = os.getenv("f9DFWr0Y8aHd6VNMEdTt")
+TOKEN = os.getenv("TOKEN")
+ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
+VOICE_ID = os.getenv("VOICE_ID")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # 🎧 Convierte OGG a WAV usando ffmpeg-python
