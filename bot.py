@@ -4,7 +4,7 @@ import ffmpeg
 import requests
 from flask import Flask, request
 from telegram import Bot, Update
-from telegram.ext import Dispatcher, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, MessageHandler, ContextTypes, filters
 
 # 🔐 Claves desde entorno
 TOKEN = os.getenv("TOKEN")
@@ -14,7 +14,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 bot = Bot(token=TOKEN)
 app = Flask(__name__)
-dispatcher = Dispatcher(bot=bot, update_queue=None, workers=4, use_context=True)
+application = Application.builder().token(TOKEN).build()
 
 # 🎧 Convierte OGG a WAV
 def convertir_ogg_a_wav(ogg_path, wav_path):
@@ -56,19 +56,19 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_audio(audio=open("voz_femenina.mp3", "rb"))
 
-dispatcher.add_handler(MessageHandler(filters.VOICE, handle_voice))
+application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
 # 🌐 Ruta para recibir webhooks
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
+    application.update_queue.put(update)
     return "OK"
 
 # 🚀 Establece el webhook al iniciar
 @app.before_first_request
 def set_webhook():
-    url = os.getenv("RENDER_EXTERNAL_URL")  # Render la define automáticamente
+    url = os.getenv("RENDER_EXTERNAL_URL")
     bot.set_webhook(f"{url}/{TOKEN}")
 
 # 🟢 Ejecuta el servidor
