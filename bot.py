@@ -66,10 +66,14 @@ def webhook():
     return "OK"
 
 # 🚀 Establece el webhook al iniciar
-@app.before_first_request
+@app.route("/set_webhook", methods=["GET"])
 def set_webhook():
     url = os.getenv("RENDER_EXTERNAL_URL")
+    if not url:
+        return "RENDER_EXTERNAL_URL no está definido", 500
     bot.set_webhook(f"{url}/{TOKEN}")
+    return f"Webhook configurado en {url}/{TOKEN}"
+
 
 # 🟢 Ejecuta el servidor
 if __name__ == "__main__":
