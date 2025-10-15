@@ -4,6 +4,7 @@ import ffmpeg
 import requests
 import asyncio
 import atexit
+import threading
 from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import Application, MessageHandler, ContextTypes, filters
@@ -94,11 +95,14 @@ def ping():
 atexit.register(application.stop)
 
 # 🚀 Inicia el bot y el servidor Flask
-if __name__ == "__main__":
-    async def iniciar_bot():
+def iniciar_bot():
+    async def arranque():
         await application.initialize()
         await application.start()
+    asyncio.run(arranque())
 
-    asyncio.run(iniciar_bot())
+if __name__ == "__main__":
+    threading.Thread(target=iniciar_bot).start()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+
 
