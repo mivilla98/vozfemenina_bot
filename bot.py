@@ -2,26 +2,31 @@ import os
 import openai
 import ffmpeg
 import requests
-from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
+from flask import Flask, request
+from telegram import Bot, Update
+from telegram.ext import Dispatcher, MessageHandler, filters, ContextTypes
 
-# 🔐 Claves desde variables de entorno
+# 🔐 Claves desde entorno
 TOKEN = os.getenv("TOKEN")
 ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
 VOICE_ID = os.getenv("VOICE_ID")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# 🎧 Convierte OGG a WAV usando ffmpeg-python
+bot = Bot(token=TOKEN)
+app = Flask(__name__)
+dispatcher = Dispatcher(bot=bot, update_queue=None, workers=4, use_context=True)
+
+# 🎧 Convierte OGG a WAV
 def convertir_ogg_a_wav(ogg_path, wav_path):
     ffmpeg.input(ogg_path).output(wav_path).run(overwrite_output=True)
 
-# 🧠 Transcribe audio usando Whisper vía OpenAI API
+# 🧠 Transcribe audio con Whisper API
 def transcribe_audio(file_path):
     with open(file_path, "rb") as audio_file:
         transcript = openai.Audio.transcribe("whisper-1", audio_file)
     return transcript["text"]
 
-# 🗣️ Genera voz femenina con ElevenLabs
+# 🗣️ Genera voz con ElevenLabs
 def generar_voz(texto):
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
     headers = {
@@ -39,7 +44,7 @@ def generar_voz(texto):
     with open("voz_femenina.mp3", "wb") as f:
         f.write(response.content)
 
-# 🤖 Función principal del bot
+# 🤖 Maneja mensajes de voz
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     voice = await update.message.voice.get_file()
     ogg_path = await voice.download_to_drive()
@@ -51,7 +56,21 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_audio(audio=open("voz_femenina.mp3", "rb"))
 
-# 🚀 Inicializa el bot
-app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(MessageHandler(filters.VOICE, handle_voice))
-app.run_polling()
+dispatcher.add_handler(MessageHandler(filters.VOICE, handle_voice))
+
+# 🌐 Ruta para recibir webhooks
+@app.route(f"/{TOKEN}", methods=["POST"])
+def webhook():
+    update = Update.de_json(request.get_json(force=True), bot)
+    dispatcher.process_update(update)
+    return "OK"
+
+# 🚀 Establece el webhook al iniciar
+@app.before_first_request
+def set_webhook():
+    url = os.getenv("RENDER_EXTERNAL_URL")  # Render la define automáticamente
+    bot.set_webhook(f"{url}/{TOKEN}")
+
+# 🟢 Ejecuta el servidor
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
