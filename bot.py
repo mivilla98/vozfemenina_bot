@@ -3,6 +3,7 @@ import openai
 import ffmpeg
 import requests
 import asyncio
+import atexit
 from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import Application, MessageHandler, ContextTypes, filters
@@ -47,16 +48,16 @@ def generar_voz(texto):
 
 # 🤖 Maneja mensajes de voz
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("🎤 Mensaje de voz recibido")
     voice = await update.message.voice.get_file()
     ogg_path = await voice.download_to_drive()
     wav_path = "audio.wav"
-    print("🎤 Mensaje de voz recibido")
 
     convertir_ogg_a_wav(ogg_path, wav_path)
     texto = transcribe_audio(wav_path)
     generar_voz(texto)
 
-    await update.message.reply_audio(audio=open("voz_femenina.mp3", "rb")) 
+    await update.message.reply_audio(audio=open("voz_femenina.mp3", "rb"))
 
 application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
@@ -71,18 +72,29 @@ def webhook():
     asyncio.run(procesar())
     return "OK"
 
-
-# 🚀 Establece el webhook al iniciar
+# 🔗 Ruta para activar el webhook
 @app.route("/set_webhook", methods=["GET"])
 def set_webhook():
     url = os.getenv("RENDER_EXTERNAL_URL")
     if not url:
         return "RENDER_EXTERNAL_URL no está definido", 500
-    asyncio.run(bot.set_webhook(f"{url}/{TOKEN}"))
+
+    async def activar():
+        await bot.set_webhook(f"{url}/{TOKEN}")
+
+    asyncio.run(activar())
     return f"✅ Webhook configurado en {url}/{TOKEN}"
 
+# 🟢 Ruta de prueba opcional
+@app.route("/ping", methods=["GET"])
+def ping():
+    return "Bot activo y escuchando", 200
 
+# 🧼 Detiene el bot al cerrar
+atexit.register(application.stop)
 
-# 🟢 Ejecuta el servidor
+# 🚀 Inicia el bot y el servidor Flask
 if __name__ == "__main__":
+    application.initialize()
+    application.start()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
