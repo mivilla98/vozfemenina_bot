@@ -50,12 +50,13 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     voice = await update.message.voice.get_file()
     ogg_path = await voice.download_to_drive()
     wav_path = "audio.wav"
+    print("🎤 Mensaje de voz recibido")
 
     convertir_ogg_a_wav(ogg_path, wav_path)
     texto = transcribe_audio(wav_path)
     generar_voz(texto)
 
-    await update.message.reply_audio(audio=open("voz_femenina.mp3", "rb"))
+    await update.message.reply_audio(audio=open("voz_femenina.mp3", "rb")) 
 
 application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
@@ -63,8 +64,13 @@ application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
-    application.update_queue.put(update)
+
+    async def procesar():
+        await application.update_queue.put(update)
+
+    asyncio.run(procesar())
     return "OK"
+
 
 # 🚀 Establece el webhook al iniciar
 @app.route("/set_webhook", methods=["GET"])
