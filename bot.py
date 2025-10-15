@@ -11,7 +11,7 @@ ELEVEN_API_KEY = os.getenv("1a53b0ca08a04fd6af805d759188191e")
 VOICE_ID = os.getenv("f9DFWr0Y8aHd6VNMEdTt")
 
 # Cargar modelo Whisper
-model = whisper.load_model("base")
+model = whisper.load_model("tiny")
 
 # Función para convertir OGG a WAV usando ffmpeg-python
 def convertir_ogg_a_wav(ogg_path, wav_path):
