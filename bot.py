@@ -2,11 +2,7 @@ import os
 import openai
 import ffmpeg
 import requests
-import asyncio
-import atexit
-import threading
-from flask import Flask, request
-from telegram import Bot, Update
+from telegram import Update
 from telegram.ext import Application, MessageHandler, ContextTypes, filters
 
 # 🔐 Claves desde entorno
@@ -14,10 +10,6 @@ TOKEN = os.getenv("TOKEN")
 ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
 VOICE_ID = os.getenv("VOICE_ID")
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
-bot = Bot(token=TOKEN)
-app = Flask(__name__)
-application = Application.builder().token(TOKEN).build()
 
 # 🎧 Convierte OGG a WAV
 def convertir_ogg_a_wav(ogg_path, wav_path):
@@ -60,49 +52,21 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_audio(audio=open("voz_femenina.mp3", "rb"))
 
-application.add_handler(MessageHandler(filters.VOICE, handle_voice))
+# 🚀 Inicia el bot en modo webhook
+async def main():
+    application = Application.builder().token(TOKEN).build()
+    application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
-# 🌐 Ruta para recibir webhooks
-@app.route(f"/{TOKEN}", methods=["POST"])
-def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-
-    async def procesar():
-        await application.update_queue.put(update)
-
-    asyncio.run(procesar())
-    return "OK"
-
-# 🔗 Ruta para activar el webhook
-@app.route("/set_webhook", methods=["GET"])
-def set_webhook():
     url = os.getenv("RENDER_EXTERNAL_URL")
-    if not url:
-        return "RENDER_EXTERNAL_URL no está definido", 500
+    webhook_url = f"{url}/{TOKEN}"
 
-    async def activar():
-        await bot.set_webhook(f"{url}/{TOKEN}")
-
-    asyncio.run(activar())
-    return f"✅ Webhook configurado en {url}/{TOKEN}"
-
-# 🟢 Ruta de prueba opcional
-@app.route("/ping", methods=["GET"])
-def ping():
-    return "Bot activo y escuchando", 200
-
-# 🧼 Detiene el bot al cerrar
-atexit.register(application.stop)
-
-# 🚀 Inicia el bot y el servidor Flask
-def iniciar_bot():
-    async def arranque():
-        await application.initialize()
-        await application.start()
-    asyncio.run(arranque())
+    await application.bot.set_webhook(webhook_url)
+    await application.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get("PORT", 10000)),
+        webhook_url=webhook_url
+    )
 
 if __name__ == "__main__":
-    threading.Thread(target=iniciar_bot).start()
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
-
-
+    import asyncio
+    asyncio.run(main())
