@@ -2,6 +2,7 @@ import os
 import openai
 import ffmpeg
 import requests
+import asyncio
 from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import Application, MessageHandler, ContextTypes, filters
@@ -71,8 +72,9 @@ def set_webhook():
     url = os.getenv("RENDER_EXTERNAL_URL")
     if not url:
         return "RENDER_EXTERNAL_URL no está definido", 500
-    bot.set_webhook(f"{url}/{TOKEN}")
-    return f"Webhook configurado en {url}/{TOKEN}"
+    asyncio.run(bot.set_webhook(f"{url}/{TOKEN}"))
+    return f"✅ Webhook configurado en {url}/{TOKEN}"
+
 
 
 # 🟢 Ejecuta el servidor
