@@ -95,6 +95,10 @@ atexit.register(application.stop)
 
 # 🚀 Inicia el bot y el servidor Flask
 if __name__ == "__main__":
-    application.initialize()
-    application.start()
+    async def iniciar_bot():
+        await application.initialize()
+        await application.start()
+
+    asyncio.run(iniciar_bot())
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+
