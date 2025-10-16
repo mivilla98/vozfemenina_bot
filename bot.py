@@ -3,6 +3,7 @@ import openai
 import ffmpeg
 import requests
 from telegram import Update
+from telegram.ext import filters
 import nest_asyncio
 from telegram.ext import Application, MessageHandler, ContextTypes, filters
 
@@ -45,6 +46,10 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         print("🎤 Mensaje de voz recibido")
 
+        print("📦 Tipo de mensaje:", update.message)
+        print("📦 voice:", update.message.voice)
+        print("📦 audio:", update.message.audio)
+        print("📦 video_note:", update.message.video_note)
         voice = await update.message.voice.get_file()
         print("📥 Archivo de voz obtenido")
 
@@ -70,7 +75,8 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # 🚀 Inicia el bot en modo webhook
 async def main():
     application = Application.builder().token(TOKEN).build()
-    application.add_handler(MessageHandler(filters.VOICE, handle_voice))
+    voice_filter = filters.VOICE | filters.AUDIO | filters.VIDEO_NOTE
+    application.add_handler(MessageHandler(voice_filter, handle_voice))
 
     url = os.getenv("RENDER_EXTERNAL_URL")
     webhook_url = f"{url}/{TOKEN}"
