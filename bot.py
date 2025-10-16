@@ -3,6 +3,7 @@ import openai
 import ffmpeg
 import requests
 from telegram import Update
+import nest_asyncio
 from telegram.ext import Application, MessageHandler, ContextTypes, filters
 
 # 🔐 Claves desde entorno
@@ -66,6 +67,8 @@ async def main():
         port=int(os.environ.get("PORT", 10000)),
         webhook_url=webhook_url
     )
+
+nest_asyncio.apply()
 
 if __name__ == "__main__":
     import asyncio
