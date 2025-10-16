@@ -42,16 +42,30 @@ def generar_voz(texto):
 
 # 🤖 Maneja mensajes de voz
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("🎤 Mensaje de voz recibido")
-    voice = await update.message.voice.get_file()
-    ogg_path = await voice.download_to_drive()
-    wav_path = "audio.wav"
+    try:
+        print("🎤 Mensaje de voz recibido")
 
-    convertir_ogg_a_wav(ogg_path, wav_path)
-    texto = transcribe_audio(wav_path)
-    generar_voz(texto)
+        voice = await update.message.voice.get_file()
+        print("📥 Archivo de voz obtenido")
 
-    await update.message.reply_audio(audio=open("voz_femenina.mp3", "rb"))
+        ogg_path = await voice.download_to_drive()
+        print(f"📁 Audio descargado en: {ogg_path}")
+
+        wav_path = "audio.wav"
+        convertir_ogg_a_wav(ogg_path, wav_path)
+        print("🔊 Audio convertido a WAV")
+
+        texto = transcribe_audio(wav_path)
+        print(f"📝 Transcripción: {texto}")
+
+        generar_voz(texto)
+        print("🗣️ Voz generada")
+
+        await update.message.reply_audio(audio=open("voz_femenina.mp3", "rb"))
+        print("📤 Audio enviado al usuario")
+
+    except Exception as e:
+        print(f"❌ Error en handle_voice: {e}")
 
 # 🚀 Inicia el bot en modo webhook
 async def main():
